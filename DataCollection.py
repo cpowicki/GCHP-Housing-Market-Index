@@ -43,3 +43,17 @@ ProfileVariables2011 ={'DP04_0046PE': 'percent_renter_occupied',
 gross_rent_30HMI = ["B25070_007E", "B25070_008E", "B25070_009E", "B25070_010E","B25070_001E","B25070_011E"]
 total = "B25070_001E"
 not_computed = "B25070_011E"
+
+def retrieveProfileData(fields):
+    dfs = []
+    for s in states:
+        endpoint = "https://api.census.gov/data/2016/acs/acs5/profile?get=" + fields + ",NAME&for=tract:*&in=state:" + s #+ "&key=" + census_api_key
+        response = requests.get(endpoint)
+        jsonobject = json.JSONDecoder().decode(response.text)
+        dfnxt = pd.DataFrame(columns=jsonobject[0], data=jsonobject[1:])
+        dfs.append(dfnxt)
+    df_ret = pd.concat(dfs)
+    return df_ret
+
+DF_2016Profile = retrieveProfileData(','.join(ProfileVariables2016.keys()))
+print(DF_2016Profile.head())
