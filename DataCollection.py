@@ -12,6 +12,9 @@ census_api_key = os.getenv("API_KEY")
 # Fips Codes for States of Interest
 states = ["01", "22", "28", "48","12","13"]
 
+# Text Fields
+txt_fields = ["NAME","state", "county", "tract"]
+
 # Indicator Census IDs and Labels for the 2016 ACS 5 Year Estimates Data Profile Table
 ProfileVariables2016 ={'DP04_0047PE': 'percent_renter_occupied',
                        'DP04_0005E': 'rental_vacancy_rate',
@@ -47,7 +50,18 @@ not_computed = "B25070_011E"
 def retrieveProfileData(fields):
     dfs = []
     for s in states:
-        endpoint = "https://api.census.gov/data/2016/acs/acs5/profile?get=" + fields + ",NAME&for=tract:*&in=state:" + s #+ "&key=" + census_api_key
+        endpoint = "https://api.census.gov/data/2016/acs/acs5/profile?get=" + fields + ",NAME&for=tract:*&in=state:" + s + "&key=" + census_api_key
+        response = requests.get(endpoint)
+        jsonobject = json.JSONDecoder().decode(response.text)
+        dfnxt = pd.DataFrame(columns=jsonobject[0], data=jsonobject[1:])
+        dfs.append(dfnxt)
+    df_ret = pd.concat(dfs)
+    return df_ret
+
+def retrieveDetailData(fields, year):
+    dfs = []
+    for s in states:
+        endpoint = "https://api.census.gov/data/"+ year + "/acs/acs5?get=" + fields + ",NAME&for=tract:*&in=state:" + s + "&key=" + census_api_key
         response = requests.get(endpoint)
         jsonobject = json.JSONDecoder().decode(response.text)
         dfnxt = pd.DataFrame(columns=jsonobject[0], data=jsonobject[1:])
@@ -56,4 +70,7 @@ def retrieveProfileData(fields):
     return df_ret
 
 DF_2016Profile = retrieveProfileData(','.join(ProfileVariables2016.keys()))
-print(DF_2016Profile.head())
+DF_2016Detail = retrieveDetailData(','.join(DetailVariables.keys()), '2016')
+
+DF_2016 = pd.merge(DF_2016Profile, DF_2016Detail, on=txt_fields, how="left")
+print(DF_2016.head())
