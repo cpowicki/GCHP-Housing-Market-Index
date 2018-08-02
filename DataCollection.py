@@ -47,6 +47,7 @@ gross_rent_30HMI = ["B25070_007E", "B25070_008E", "B25070_009E", "B25070_010E","
 total = "B25070_001E"
 not_computed = "B25070_011E"
 
+# Function that retrieves fields from the Data Profile ACS Table
 def retrieveProfileData(fields):
     dfs = []
     for s in states:
@@ -58,6 +59,7 @@ def retrieveProfileData(fields):
     df_ret = pd.concat(dfs)
     return df_ret
 
+# Function that retrieves fields from the Detail ACS Table
 def retrieveDetailData(fields, year):
     dfs = []
     for s in states:
@@ -72,5 +74,9 @@ def retrieveDetailData(fields, year):
 DF_2016Profile = retrieveProfileData(','.join(ProfileVariables2016.keys()))
 DF_2016Detail = retrieveDetailData(','.join(DetailVariables.keys()), '2016')
 
+# The combination of Text Fields will be unique, and this will allow us to avoid duplicate columns.
 DF_2016 = pd.merge(DF_2016Profile, DF_2016Detail, on=txt_fields, how="left")
-print(DF_2016.head())
+new_columns = ProfileVariables2016.values() + txt_fields + DetailVariables.values()
+
+DF_2016.columns = new_columns
+DF_2016.to_csv("2016_Raw.csv")
