@@ -43,7 +43,7 @@ ProfileVariables2011 ={'DP04_0046PE': 'percent_renter_occupied',
                        'DP03_0009PE': 'unemployment_rate'
                        }
 
-gross_rent_30HMI = ["B25070_007E", "B25070_008E", "B25070_009E", "B25070_010E","B25070_001E","B25070_011E"]
+gross_rent_30HMI = ["B25070_007E", "B25070_008E", "B25070_009E", "B25070_010E"]
 total = "B25070_001E"
 not_computed = "B25070_011E"
 
@@ -71,6 +71,29 @@ def retrieveDetailData(fields, year):
     df_ret = pd.concat(dfs)
     return df_ret
 
+def calculateRentBurden():
+    dfs = []
+    for s in states:
+        endpoint = "https://api.census.gov/data/2016/acs/acs5?get=" + ','.join(gross_rent_30HMI) + ',' + total + ',' + not_computed + ",NAME&for=tract:*&in=state:" + s + "&key=" + census_api_key
+        response = requests.get(endpoint)
+        jsonobject = json.JSONDecoder().decode(response.text)
+        dfnxt = pd.DataFrame(columns=jsonobject[0], data=jsonobject[1:])
+        dfs.append(dfnxt)
+    df_ret = pd.concat(dfs)
+    df_ret["percent_gross_rent_>30%HI"] = pd.Series();
+    for index,row in df_ret.iterrows():
+        numerator = sum([float(row[i]) for i in gross_rent_30HMI])
+        denominator = float(row[total]) - float(row[not_computed])
+        try:
+            row["percent_gross_rent_>30%HI"] = numerator/denominator
+        except ZeroDivisionError, e:
+            row["percent_gross_rent_>30%HI"] = np.NaN
+    print(df_ret.head())
+    df_ret.drop(gross_rent_30HMI + [total, not_computed], inplace = True)
+    return df_ret
+
+DF_2016RentBurden = calculateRentBurden();
+print(DF_2016RentBurden.head())
 DF_2016Profile = retrieveProfileData(','.join(ProfileVariables2016.keys()))
 DF_2016Detail = retrieveDetailData(','.join(DetailVariables.keys()), '2016')
 
